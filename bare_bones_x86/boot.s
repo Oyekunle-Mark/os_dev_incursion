@@ -27,4 +27,3 @@ loop:
 	cli
 	hlt
 	jmp loop
-
