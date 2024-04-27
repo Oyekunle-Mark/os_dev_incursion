@@ -11,9 +11,11 @@
 	#error "This program is meant to target ix86"
 #endif
 
+// VGA text mode console is 80 columns by 25 rows
 const size_t VGA_ROWS = 25;
 const size_t VGA_COLS = 80;
 
+// The VGA text buffer is located at physical memory address 0xB8000
 uint16_t* vga_buffer = (uint16_t*)0xB8000;
 
 size_t row_index = 0;
@@ -21,8 +23,13 @@ size_t col_index = 0;
 
 // uint8_t VGA_COLOR_BLACK = 0;
 // uint8_t VGA_COLOR_WHITE = 15;
+// we are shifting the backgroud color left by 4 and bit ORing with the foregroud color
 uint8_t terminal_color = 0 << 4 | 15;
 
+/**
+ * terminal_initialize clears the entire screen
+ * by writing blank, the space character
+ */
 void terminal_initialize()
 {
 	for(size_t col = 0; col < VGA_COLS; col++)
@@ -30,11 +37,16 @@ void terminal_initialize()
 		for(size_t row = 0; row < VGA_ROWS; row++)
 		{
 			const size_t index = (VGA_COLS * row) + col;
+			// shift terminal color to it's place and set the character code point to blank
 			vga_buffer[index] = ((uint16_t)terminal_color << 8) | ' ';
 		}
 	}
 }
 
+/**
+ * terminal_write_char writes a single character to the terminal.
+ * Accounts for newlines
+ */
 void terminal_write_char(char c)
 {
 	switch(c)
@@ -67,6 +79,10 @@ void terminal_write_char(char c)
 	}
 }
 
+/**
+ * terminal_write_string writes each character in the
+ * string to the terminal.
+ */
 void terminal_write_string(const char* str)
 {
 	for(size_t i = 0; str[i] != '\0'; i++)
