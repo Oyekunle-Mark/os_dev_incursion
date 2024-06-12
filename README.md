@@ -1,2 +1,3 @@
 # os_dev_incursion
-Tiny kernels.
+
+A collection of OS Dev practice programs
