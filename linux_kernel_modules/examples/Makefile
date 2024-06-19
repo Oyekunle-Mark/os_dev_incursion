@@ -1,6 +1,7 @@
 obj-m += hello_1.o
 obj-m += hello_2.o
 obj-m += chardev.o
+obj-m += hello_sysfs.o
 
 PWD := $(CURDIR)
 
