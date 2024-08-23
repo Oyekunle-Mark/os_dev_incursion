@@ -21,6 +21,7 @@ static int __init hello_init(void)
 static void __exit hello_exit(void)
 {
 	time64_t duration = ktime_get_seconds() - start;
+
 	pr_info("Bye, lonesome world. I was alived for a mere %d seconds.\n", (int)duration);
 }
 
