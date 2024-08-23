@@ -3,9 +3,13 @@
 #include <linux/module.h>
 #include <linux/utsname.h>
 
+static char *whom = "world";
+module_param(whom, charp, 0644);
+MODULE_PARM_DESC(whom, "Recipient of the hello message.");
+
 static int __init hello_init(void)
 {
-	pr_info("Hello World. You are currently using Linux %s\n", utsname()->release);
+	pr_info("Hello %s. You are currently using Linux %s\n", whom, utsname()->release);
 	return 0;
 }
 
