@@ -1,7 +1,7 @@
 From 1065c3cd48593fbdc3ab4a639cba8a9708b61040 Mon Sep 17 00:00:00 2001
 From: Oye Oloyede <oyekunlemac@gmail.com>
 Date: Sat, 24 Aug 2024 17:08:00 +0100
-Subject: [PATCH] updated device tree to active ic21 and declare joystick
+Subject: [PATCH 1/2] updated device tree to active ic21 and declare joystick
  device as an ic21 device
 
 Signed-off-by: Oye Oloyede <oyekunlemac@gmail.com>
