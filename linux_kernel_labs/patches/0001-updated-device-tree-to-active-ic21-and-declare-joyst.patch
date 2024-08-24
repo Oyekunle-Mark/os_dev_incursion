@@ -1,0 +1,76 @@
+From 1065c3cd48593fbdc3ab4a639cba8a9708b61040 Mon Sep 17 00:00:00 2001
+From: Oye Oloyede <oyekunlemac@gmail.com>
+Date: Sat, 24 Aug 2024 17:08:00 +0100
+Subject: [PATCH] updated device tree to active ic21 and declare joystick
+ device as an ic21 device
+
+Signed-off-by: Oye Oloyede <oyekunlemac@gmail.com>
+---
+ arch/arm/boot/dts/ti/omap/Makefile            |  1 +
+ .../boot/dts/ti/omap/am335x-bone-common.dtsi  |  2 +-
+ .../dts/ti/omap/am335x-boneblack-custom.dts   | 28 +++++++++++++++++++
+ 3 files changed, 30 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm/boot/dts/ti/omap/am335x-boneblack-custom.dts
+
+diff --git a/arch/arm/boot/dts/ti/omap/Makefile b/arch/arm/boot/dts/ti/omap/Makefile
+index d2b590004fed..97ad50478906 100644
+--- a/arch/arm/boot/dts/ti/omap/Makefile
++++ b/arch/arm/boot/dts/ti/omap/Makefile
+@@ -87,6 +87,7 @@ dtb-$(CONFIG_SOC_AM33XX) += \
+ 	am335x-base0033.dtb \
+ 	am335x-bone.dtb \
+ 	am335x-boneblack.dtb \
++	am335x-boneblack-custom.dtb \
+ 	am335x-boneblack-wireless.dtb \
+ 	am335x-boneblue.dtb \
+ 	am335x-bonegreen.dtb \
+diff --git a/arch/arm/boot/dts/ti/omap/am335x-bone-common.dtsi b/arch/arm/boot/dts/ti/omap/am335x-bone-common.dtsi
+index 96451c8a815c..4048e217dd78 100644
+--- a/arch/arm/boot/dts/ti/omap/am335x-bone-common.dtsi
++++ b/arch/arm/boot/dts/ti/omap/am335x-bone-common.dtsi
+@@ -19,7 +19,7 @@ chosen {
+ 		stdout-path = &uart0;
+ 	};
+ 
+-	leds {
++	custom_leds: leds {
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&user_leds_s0>;
+ 
+diff --git a/arch/arm/boot/dts/ti/omap/am335x-boneblack-custom.dts b/arch/arm/boot/dts/ti/omap/am335x-boneblack-custom.dts
+new file mode 100644
+index 000000000000..51e7cf4be34b
+--- /dev/null
++++ b/arch/arm/boot/dts/ti/omap/am335x-boneblack-custom.dts
+@@ -0,0 +1,28 @@
++// SPDX-License-Identifier: GPL-2.0
++#include "am335x-boneblack.dts"
++
++/ {
++	model = "Training Beagle Bone Black";
++};
++
++&custom_leds {
++	led3 {
++		default-state = "on";
++	};
++
++	led5 {
++		default-state = "on";
++	};
++};
++
++&i2c1 {
++	status = "okay";
++	clock-frequency = <100000>;
++
++	joystick@52 {
++		compatible = "nintendo,nunchuk";
++		reg = <0x52>;
++		nintendo,alternate-init;
++	};
++};
++
+-- 
+2.39.2
+
