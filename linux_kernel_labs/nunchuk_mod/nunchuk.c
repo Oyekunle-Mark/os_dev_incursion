@@ -3,6 +3,7 @@
 #include <linux/module.h>
 #include <linux/i2c.h>
 #include <linux/delay.h>
+#include <linux/input.h>
 
 static char buffer[6] = {0};
 
@@ -44,6 +45,21 @@ static int nunchuk_probe(struct i2c_client *client)
 
 	pr_info("Z pressed: %d\n", zpressed);
 	pr_info("C pressed: %d\n", cpressed);
+
+	struct input_dev *input = devm_input_allocate_device(&client->dev);
+	input->name = "Wii Nunchuk";
+	input->id.bustype = BUS_I2C;
+
+	set_bit(EV_KEY, input->evbit);
+	set_bit(BTN_C, input->keybit);
+	set_bit(BTN_Z, input->keybit);
+
+	int ret = input_register_device(input);
+
+	if (ret) {
+		pr_alert("Failed to register input device.\n");
+		return ret;
+	}
 
 	return 0;
 }
