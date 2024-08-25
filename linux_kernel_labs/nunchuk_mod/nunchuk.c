@@ -76,6 +76,13 @@ static const struct of_device_id nunchuk_of_match[] = {
 
 MODULE_DEVICE_TABLE(of, nunchuk_of_match);
 
+static const struct i2c_device_id nunchuk_id[] = {
+	{"nunchuk", 0},
+	{ },
+};
+
+MODULE_DEVICE_TABLE(i2c, nunchuk_id);
+
 static struct i2c_driver nunchuk_i2c_driver = {
 	.driver = {
 		.name = "nunchuk_i2c",
@@ -83,6 +90,7 @@ static struct i2c_driver nunchuk_i2c_driver = {
 	},
 	.probe = nunchuk_probe,
 	.remove = nunchuk_remove,
+	.id_table = nunchuk_id,
 };
 
 module_i2c_driver(nunchuk_i2c_driver);
