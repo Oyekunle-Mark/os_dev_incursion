@@ -60,8 +60,22 @@ static int serial_probe(struct platform_device *pdev)
 	/* Clear UART FIFOs */
 	reg_write(serial, UART_FCR_CLEAR_RCVR | UART_FCR_CLEAR_XMIT, UART_FCR);
 
-	// write a test char 'C'
-	serial_write_char(serial, 'C');
+	// write a test string
+	serial_write_char(serial, '>');
+	serial_write_char(serial, ' ');
+	serial_write_char(serial, 'H');
+	serial_write_char(serial, 'e');
+	serial_write_char(serial, 'l');
+	serial_write_char(serial, 'l');
+	serial_write_char(serial, 'o');
+	serial_write_char(serial, ' ');
+	serial_write_char(serial, 's');
+	serial_write_char(serial, 'e');
+	serial_write_char(serial, 'r');
+	serial_write_char(serial, 'i');
+	serial_write_char(serial, 'a');
+	serial_write_char(serial, 'l');
+	serial_write_char(serial, '!');
 
 	pr_info("Called %s\n", __func__);
 
