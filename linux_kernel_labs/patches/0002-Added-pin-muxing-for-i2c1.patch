@@ -1,7 +1,7 @@
 From bd6f63d7c930e2503e048dad9bdaa85d800e0adf Mon Sep 17 00:00:00 2001
 From: Oye Oloyede <oyekunlemac@gmail.com>
 Date: Sat, 24 Aug 2024 22:00:39 +0100
-Subject: [PATCH 2/2] Added pin muxing for i2c1
+Subject: [PATCH 2/3] Added pin muxing for i2c1
 
 Signed-off-by: Oye Oloyede <oyekunlemac@gmail.com>
 ---
