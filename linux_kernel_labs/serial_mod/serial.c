@@ -58,6 +58,7 @@ static ssize_t serial_read(struct file *file, char __user *buf, size_t sz, loff_
 }
 
 static const struct file_operations serial_fops = {
+	.owner = THIS_MODULE, // tell the kernel our module is in charge of this serial device to get reference count of usage
 	.write = serial_write,
 	.read = serial_read,
 };
