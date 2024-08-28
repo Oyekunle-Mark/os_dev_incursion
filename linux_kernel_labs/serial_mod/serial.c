@@ -6,9 +6,12 @@
 #include <uapi/linux/serial_reg.h>
 #include <linux/pm_runtime.h>
 #include <linux/io.h>
+#include <linux/fs.h>
+#include <linux/miscdevice.h>
 
 struct serial_dev {
 	void __iomem *regs;
+	struct miscdevice miscdev;
 };
 
 static u32 reg_read(struct serial_dev *serial, unsigned int reg)
@@ -29,8 +32,39 @@ static void serial_write_char(struct serial_dev *serial, unsigned char c)
 	reg_write(serial, c, UART_TX);
 }
 
+static ssize_t serial_write(struct file *file, const char __user *buf, size_t sz, loff_t *ppos)
+{
+	struct miscdevice *miscdev_ptr = file->private_data;
+	struct serial_dev *serial = container_of(miscdev_ptr, struct serial_dev, miscdev);
+
+	for (int i = 0; i < sz; i++) {
+		unsigned char c;
+		get_user(c, buf + i);
+
+		serial_write_char(serial, c);
+
+		// add additional carriage return writes for new lines
+		if (c == '\n')
+			serial_write_char(serial, '\r');
+	}
+
+	*ppos += sz;
+	return sz;
+}
+
+static ssize_t serial_read(struct file *file, char __user *buf, size_t sz, loff_t *ppos)
+{
+	return -EINVAL;
+}
+
+static const struct file_operations serial_fops = {
+	.write = serial_write,
+	.read = serial_read,
+};
+
 static int serial_probe(struct platform_device *pdev)
 {
+	int ret;
 	struct serial_dev *serial = devm_kzalloc(&pdev->dev, sizeof(*serial), GFP_KERNEL);
 	if (!serial)
 		return -ENOMEM;
@@ -43,7 +77,7 @@ static int serial_probe(struct platform_device *pdev)
 
 	unsigned int baud_divisor, uartclk;
 	/* Configure the baud rate to 115200 */
-	int ret = of_property_read_u32(pdev->dev.of_node, "clock-frequency", &uartclk);
+	ret = of_property_read_u32(pdev->dev.of_node, "clock-frequency", &uartclk);
 	if (ret) {
 		dev_err(&pdev->dev,
 			"clock-frequency property not found in Device Tree\n");
@@ -77,16 +111,46 @@ static int serial_probe(struct platform_device *pdev)
 	serial_write_char(serial, 'l');
 	serial_write_char(serial, '!');
 
+	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	if (!res) {
+		ret = -EINVAL;
+		goto disable_runtime_pm;
+	}
+
+	/* Declare misc device */
+	serial->miscdev.minor = MISC_DYNAMIC_MINOR;
+	serial->miscdev.name = devm_kasprintf(&pdev->dev, GFP_KERNEL,
+					      "serial-%x", res->start);
+	serial->miscdev.fops = &serial_fops;
+	serial->miscdev.parent = &pdev->dev;
+
+	/* Setup pointer from physical to per device data */
+	platform_set_drvdata(pdev, serial);
+
+	/* Everything is ready, register the misc device */
+	ret = misc_register(&serial->miscdev);
+	if (ret) {
+		dev_err(&pdev->dev, "Cannot register misc device (%d)\n", ret);
+		goto disable_runtime_pm;
+	}
+
 	pr_info("Called %s\n", __func__);
 
 	return 0;
+disable_runtime_pm:
+	pm_runtime_disable(&pdev->dev);
+
+	return ret;
 }
 
 static int serial_remove(struct platform_device *pdev)
 {
-	pr_info("Called %s\n", __func__);
+	struct serial_dev *serial = platform_get_drvdata(pdev);
+	misc_deregister(&serial->miscdev);
+
 	pm_runtime_disable(&pdev->dev);
 
+	pr_info("Called %s\n", __func__);
 	return 0;
 }
 
