@@ -9,15 +9,22 @@
 #include <linux/fs.h>
 #include <linux/miscdevice.h>
 #include <linux/interrupt.h>
+#include <linux/of_irq.h>
+#include <linux/wait.h>
 
 // ioctl operations
 #define SERIAL_RESET_COUNTER 0
 #define SERIAL_GET_COUNTER 1
+#define SERIAL_BUFSIZE 16
 
 struct serial_dev {
 	void __iomem *regs;
 	struct miscdevice miscdev;
 	unsigned int counter;
+	char rx_buf[SERIAL_BUFSIZE];
+	unsigned int buf_rd;
+	unsigned int buf_wr;
+	wait_queue_head_t wait;
 };
 
 static u32 reg_read(struct serial_dev *serial, unsigned int reg)
@@ -61,7 +68,18 @@ static ssize_t serial_write(struct file *file, const char __user *buf, size_t sz
 
 static ssize_t serial_read(struct file *file, char __user *buf, size_t sz, loff_t *ppos)
 {
-	return -EINVAL;
+	struct miscdevice *miscdev_ptr = file->private_data;
+	struct serial_dev *serial = container_of(miscdev_ptr, struct serial_dev, miscdev);
+
+	wait_event_interruptible(serial->wait, serial->buf_rd != serial->buf_wr);
+
+	if (serial->buf_rd != serial->buf_wr) {
+		put_user(serial->rx_buf[serial->buf_rd++], buf);
+		serial->buf_rd = serial->buf_rd == SERIAL_BUFSIZE ? 0 : serial->buf_rd;
+	}
+
+	*ppos += 1;
+	return 1;
 }
 
 static long serial_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
@@ -95,7 +113,12 @@ static irqreturn_t serial_handler(int irq, void *dev_id)
 	struct serial_dev *serial = dev_id;
 	unsigned char c = reg_read(serial, UART_RX);
 
-	pr_info("%c", c);
+	serial->rx_buf[serial->buf_wr++] = c;
+	serial->buf_wr = serial->buf_wr == SERIAL_BUFSIZE ? 0 : serial->buf_wr;
+
+	// wake up all waiting processes on the wait queue
+	wake_up(&serial->wait);
+
 	return IRQ_HANDLED;
 }
 
@@ -130,6 +153,9 @@ static int serial_probe(struct platform_device *pdev)
 	reg_write(serial, 0x00, UART_OMAP_MDR1);
 	/* Clear UART FIFOs */
 	reg_write(serial, UART_FCR_CLEAR_RCVR | UART_FCR_CLEAR_XMIT, UART_FCR);
+
+	/* Initialize wait queue */
+	init_waitqueue_head(&serial->wait);
 
 	// get irq number from device tree and register interrupt handler
 	int irq = platform_get_irq(pdev, 0);
