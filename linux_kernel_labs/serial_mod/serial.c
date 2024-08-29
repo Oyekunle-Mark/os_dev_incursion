@@ -15,6 +15,7 @@
 // ioctl operations
 #define SERIAL_RESET_COUNTER 0
 #define SERIAL_GET_COUNTER 1
+
 #define SERIAL_BUFSIZE 16
 
 struct serial_dev {
@@ -25,6 +26,7 @@ struct serial_dev {
 	unsigned int buf_rd;
 	unsigned int buf_wr;
 	wait_queue_head_t wait;
+	spinlock_t lock;
 };
 
 static u32 reg_read(struct serial_dev *serial, unsigned int reg)
@@ -39,10 +41,20 @@ static void reg_write(struct serial_dev *serial, u32 val, unsigned int reg)
 
 static void serial_write_char(struct serial_dev *serial, unsigned char c)
 {
+	unsigned long flags;
+
+retry:
 	while((reg_read(serial, UART_LSR) & UART_LSR_THRE) == 0)
 		cpu_relax();
 
+	spin_lock_irqsave(&serial->lock, flags);
+	if ((reg_read(serial, UART_LSR) & UART_LSR_THRE) == 0) {
+		spin_unlock_irqrestore(&serial->lock, flags);
+		goto retry;
+	}
+
 	reg_write(serial, c, UART_TX);
+	spin_unlock_irqrestore(&serial->lock, flags);
 }
 
 static ssize_t serial_write(struct file *file, const char __user *buf, size_t sz, loff_t *ppos)
@@ -70,13 +82,26 @@ static ssize_t serial_read(struct file *file, char __user *buf, size_t sz, loff_
 {
 	struct miscdevice *miscdev_ptr = file->private_data;
 	struct serial_dev *serial = container_of(miscdev_ptr, struct serial_dev, miscdev);
+	unsigned long flags;
 
+retry:
 	wait_event_interruptible(serial->wait, serial->buf_rd != serial->buf_wr);
 
-	if (serial->buf_rd != serial->buf_wr) {
-		put_user(serial->rx_buf[serial->buf_rd++], buf);
-		serial->buf_rd = serial->buf_rd == SERIAL_BUFSIZE ? 0 : serial->buf_rd;
+	spin_lock_irqsave(&serial->lock, flags);
+
+	// we check for there is a char to read from the buffer after obtaining the lock
+	// lock and wait again, otherwise
+	if (serial->buf_rd == serial->buf_wr) {
+		spin_unlock_irqrestore(&serial->lock, flags);
+		goto retry;
 	}
+
+	unsigned char c = serial->rx_buf[serial->buf_rd++];
+	serial->buf_rd = serial->buf_rd == SERIAL_BUFSIZE ? 0 : serial->buf_rd;
+
+	spin_unlock_irqrestore(&serial->lock, flags);
+
+	put_user(c, buf); // put user may sleep, so it has to be done outside of the spin lock
 
 	*ppos += 1;
 	return 1;
@@ -111,11 +136,16 @@ static const struct file_operations serial_fops = {
 static irqreturn_t serial_handler(int irq, void *dev_id)
 {
 	struct serial_dev *serial = dev_id;
+
+	spin_lock(&serial->lock);
+
 	unsigned char c = reg_read(serial, UART_RX);
 
 	serial->rx_buf[serial->buf_wr++] = c;
 	serial->buf_wr = serial->buf_wr == SERIAL_BUFSIZE ? 0 : serial->buf_wr;
 
+	// release spin lock
+	spin_unlock(&serial->lock);
 	// wake up all waiting processes on the wait queue
 	wake_up(&serial->wait);
 
@@ -153,6 +183,9 @@ static int serial_probe(struct platform_device *pdev)
 	reg_write(serial, 0x00, UART_OMAP_MDR1);
 	/* Clear UART FIFOs */
 	reg_write(serial, UART_FCR_CLEAR_RCVR | UART_FCR_CLEAR_XMIT, UART_FCR);
+
+	// initialize the spin lock
+	spin_lock_init(&serial->lock);
 
 	/* Initialize wait queue */
 	init_waitqueue_head(&serial->wait);
