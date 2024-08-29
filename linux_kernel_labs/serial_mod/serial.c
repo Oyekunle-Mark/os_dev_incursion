@@ -8,6 +8,7 @@
 #include <linux/io.h>
 #include <linux/fs.h>
 #include <linux/miscdevice.h>
+#include <linux/interrupt.h>
 
 // ioctl operations
 #define SERIAL_RESET_COUNTER 0
@@ -89,6 +90,12 @@ static const struct file_operations serial_fops = {
 	.unlocked_ioctl = serial_ioctl,
 };
 
+static irqreturn_t serial_handler(int irq, void *dev_id)
+{
+	pr_info("%s called.\n", __func__);
+	return IRQ_HANDLED;
+}
+
 static int serial_probe(struct platform_device *pdev)
 {
 	int ret;
@@ -121,22 +128,11 @@ static int serial_probe(struct platform_device *pdev)
 	/* Clear UART FIFOs */
 	reg_write(serial, UART_FCR_CLEAR_RCVR | UART_FCR_CLEAR_XMIT, UART_FCR);
 
-	// write a test string
-	serial_write_char(serial, '>');
-	serial_write_char(serial, ' ');
-	serial_write_char(serial, 'H');
-	serial_write_char(serial, 'e');
-	serial_write_char(serial, 'l');
-	serial_write_char(serial, 'l');
-	serial_write_char(serial, 'o');
-	serial_write_char(serial, ' ');
-	serial_write_char(serial, 's');
-	serial_write_char(serial, 'e');
-	serial_write_char(serial, 'r');
-	serial_write_char(serial, 'i');
-	serial_write_char(serial, 'a');
-	serial_write_char(serial, 'l');
-	serial_write_char(serial, '!');
+	// get irq number from device tree and register interrupt handler
+	int irq = platform_get_irq(pdev, 0);
+	ret = devm_request_irq(&pdev->dev, irq, serial_handler, 0, pdev->name, serial);
+	// enable interrupts
+	reg_write(serial, UART_IER_RDI, UART_IER);
 
 	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!res) {
