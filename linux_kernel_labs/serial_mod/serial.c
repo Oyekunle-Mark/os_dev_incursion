@@ -9,9 +9,14 @@
 #include <linux/fs.h>
 #include <linux/miscdevice.h>
 
+// ioctl operations
+#define SERIAL_RESET_COUNTER 0
+#define SERIAL_GET_COUNTER 1
+
 struct serial_dev {
 	void __iomem *regs;
 	struct miscdevice miscdev;
+	unsigned int counter;
 };
 
 static u32 reg_read(struct serial_dev *serial, unsigned int reg)
@@ -42,6 +47,7 @@ static ssize_t serial_write(struct file *file, const char __user *buf, size_t sz
 		get_user(c, buf + i);
 
 		serial_write_char(serial, c);
+		serial->counter++; // increment char count
 
 		// add additional carriage return writes for new lines
 		if (c == '\n')
@@ -57,10 +63,30 @@ static ssize_t serial_read(struct file *file, char __user *buf, size_t sz, loff_
 	return -EINVAL;
 }
 
+static long serial_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+	struct miscdevice *miscdev_ptr = file->private_data;
+	struct serial_dev *serial = container_of(miscdev_ptr, struct serial_dev, miscdev);
+
+	switch(cmd) {
+	case SERIAL_RESET_COUNTER:
+		serial->counter = 0;
+		break;
+	case SERIAL_GET_COUNTER:
+		put_user(serial->counter, (unsigned int __user *)arg);
+		break;
+	default:
+		return -ENOTTY;
+	}
+
+	return 0;
+}
+
 static const struct file_operations serial_fops = {
 	.owner = THIS_MODULE, // tell the kernel our module is in charge of this serial device to get reference count of usage
 	.write = serial_write,
 	.read = serial_read,
+	.unlocked_ioctl = serial_ioctl,
 };
 
 static int serial_probe(struct platform_device *pdev)
