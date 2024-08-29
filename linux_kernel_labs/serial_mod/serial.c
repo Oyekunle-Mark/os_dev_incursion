@@ -92,7 +92,10 @@ static const struct file_operations serial_fops = {
 
 static irqreturn_t serial_handler(int irq, void *dev_id)
 {
-	pr_info("%s called.\n", __func__);
+	struct serial_dev *serial = dev_id;
+	unsigned char c = reg_read(serial, UART_RX);
+
+	pr_info("%c", c);
 	return IRQ_HANDLED;
 }
 
