@@ -1,0 +1,39 @@
+From bd6f63d7c930e2503e048dad9bdaa85d800e0adf Mon Sep 17 00:00:00 2001
+From: Oye Oloyede <oyekunlemac@gmail.com>
+Date: Sat, 24 Aug 2024 22:00:39 +0100
+Subject: [PATCH 2/3] Added pin muxing for i2c1
+
+Signed-off-by: Oye Oloyede <oyekunlemac@gmail.com>
+---
+ arch/arm/boot/dts/ti/omap/am335x-boneblack-custom.dts | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/arch/arm/boot/dts/ti/omap/am335x-boneblack-custom.dts b/arch/arm/boot/dts/ti/omap/am335x-boneblack-custom.dts
+index 51e7cf4be34b..b30f09ec5517 100644
+--- a/arch/arm/boot/dts/ti/omap/am335x-boneblack-custom.dts
++++ b/arch/arm/boot/dts/ti/omap/am335x-boneblack-custom.dts
+@@ -16,6 +16,9 @@ led5 {
+ };
+ 
+ &i2c1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&i2c1_pins>;
++
+ 	status = "okay";
+ 	clock-frequency = <100000>;
+ 
+@@ -26,3 +29,11 @@ joystick@52 {
+ 	};
+ };
+ 
++&am33xx_pinmux {
++	i2c1_pins: i2c1-pins {
++		pinctrl-single,pins = <
++			AM33XX_PADCONF(AM335X_PIN_SPI0_D1, PIN_INPUT_PULLUP, MUX_MODE2)	/* spi0_d1.i2c1_sda */
++			AM33XX_PADCONF(AM335X_PIN_SPI0_CS0, PIN_INPUT_PULLUP, MUX_MODE2)	/* spi0_cs0.i2c1_scl */
++		>;
++	};
++};
+-- 
+2.39.2
+
