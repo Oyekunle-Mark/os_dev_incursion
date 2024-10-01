@@ -3,6 +3,6 @@
 _start:
 	# move binary 1101(decimal 13) into rdi as status code of exit syscall
 	movq $0b1101, %rdi
-	# makk exit syscall so the decimal value of %rdi gets called
+	# make exit syscall so the decimal value of %rdi gets called
 	movq $60, %rax
 	syscall
