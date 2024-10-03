@@ -11,7 +11,7 @@ _start:
 	# if exponent is zero, we can wrap up the program
 	cmpq $0, %rcx
 	# jump if result of last comparison set the zero flag to 0
-	je comple
+	je complete
 mainloop:
 	# multiple %rax with %rbx
 	mulq %rbx
