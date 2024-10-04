@@ -9,7 +9,7 @@ numbers:
 .globl _start
 _start:
 	movq number_of_numbers, %rcx
-	movq $0, rdi
+	movq $0, %rdi
 
 	cmp $0, %rcx
 	je endloop
