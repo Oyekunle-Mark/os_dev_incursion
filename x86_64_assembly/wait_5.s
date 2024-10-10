@@ -30,6 +30,8 @@ time_loop:
 	cmpq %rdx, current_time
 	jb time_loop
 finish:
+	# exit with 0 exit code
+	# 0x3c is 60(syscall exit)
 	movq $0x3c, %rax
 	movq $0, %rdi
 	syscall
