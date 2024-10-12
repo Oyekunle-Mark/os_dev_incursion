@@ -27,8 +27,10 @@ main_loop:
 	decq -8(%rbp)
 	# jump to repeat multiplication if expoent is
 	# greater than zero
-	jnz mainloop
+	jnz main_loop
 complete:
+	# the return value is alread in %rax
+
 	# issue leave to destroy the stack frame
 	# leave is equivalent to:
 	# 1. movq %rbp, %rsp
