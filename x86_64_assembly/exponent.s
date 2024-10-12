@@ -14,6 +14,9 @@ exponent:
 	# 1. pushq %rbp
 	# 2. movq %rsp, %rbp
 	# 3, subq $16, %rsp
+	# even though we only need a single quadword value on the
+	# stack, we are allocating 16 types because the System v ABI
+	# requires the stack to be 16 byte stack aligned.
 	enter $16, $0
 	# set the accumulator to 1
 	movq $1, %rax
