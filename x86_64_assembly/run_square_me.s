@@ -18,5 +18,7 @@ main:
 	movq %rax, %rcx
 	call fprintf
 
+	xorq %rax, %rax
+
 	leave
 	ret
