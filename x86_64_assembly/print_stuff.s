@@ -11,7 +11,8 @@ print_stuff:
 	# we do this to ensure the stack is properly set up
 	enter $0, $0
 
-	# pc-relative addressing of stdout(a shared data)
+	# pc-relative addressing of stdout(an externally
+	# defined data)
 	movq stdout@GOTPCREL(%rip), %rdi
 	movq (%rdi), %rdi
 	# load the address of my_text as pc_relative
