@@ -1,3 +1,3 @@
 # os_dev_incursion
 
-A collection of OS Dev practice programs
+Random collection of practice programs relating to systems development.
